@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Copy, Terminal, AlertTriangle, Shield, Zap } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Copy, Terminal, AlertTriangle, Shield, Zap, Edit3, Check, X } from 'lucide-react';
 import { Command, CommandType, RiskLevel } from '../types/commands';
 
 interface CommandCardProps {
   command: Command;
   className?: string;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 const riskIcons = {
@@ -48,50 +50,76 @@ const chipsetColors = {
   generic: 'bg-gray-500/10 text-gray-400',
 };
 
-function highlightSyntax(command: string): string {
-  const lines = command.split('\n');
-  return lines.map(line => {
-    let highlighted = line;
-    
-    // Highlight commands (adb, fastboot, python3, etc.)
-    highlighted = highlighted.replace(/\b(adb|fastboot|python|python3|shell|dd|lsusb|reboot|install|flash|boot|getprop|wipe|sideload)\b/g, 
-      '<span class="token-cmd">$1</span>');
-    
-    // Highlight flags and options
-    highlighted = highlighted.replace(/(--[\w-]+|-[a-zA-Z])/g, 
-      '<span class="token-flag">$1</span>');
-    
-    // Highlight strings in quotes
-    highlighted = highlighted.replace(/"([^"]*)"/g, 
-      '<span class="token-string">"$1"</span>');
-    
-    // Highlight variables
-    highlighted = highlighted.replace(/\$\{?[\w-]+\}?/g, 
-      '<span class="token-var">$&</span>');
-    
-    // Highlight file paths
-    highlighted = highlighted.replace(/(\/[\w\/.-]+|\.img|\.apk|\.zip|\.py)/g, 
-      '<span class="token-path">$1</span>');
-    
-    // Highlight comments
-    highlighted = highlighted.replace(/(#.*)$/g, 
-      '<span class="token-comment">$1</span>');
-    
-    // Highlight numbers and ports
-    highlighted = highlighted.replace(/\b(\d+)\b/g, 
-      '<span class="token-num">$1</span>');
-    
-    return highlighted;
-  }).join('\n');
+// Extract variables from command text
+function extractVariables(command: string): string[] {
+  const varPattern = /\[([A-Z_]+)\]|\$\{?([A-Z_]+)\}?/g;
+  const matches: string[] = [];
+  let match;
+  while ((match = varPattern.exec(command)) !== null) {
+    matches.push(match[1] || match[2]);
+  }
+  return [...new Set(matches)];
 }
 
-export default function CommandCard({ command, className = '' }: CommandCardProps) {
+function highlightSyntax(command: string, variables: Record<string, string>): string {
+  let highlighted = command;
+  
+  // Replace variables with their values
+  Object.entries(variables).forEach(([key, value]) => {
+    const pattern = new RegExp(`\\[${key}\\]|\\$\\{?${key}\\}?`, 'g');
+    highlighted = highlighted.replace(pattern, `<span class="token-var">${value}</span>`);
+  });
+  
+  // Highlight commands (adb, fastboot, python3, etc.)
+  highlighted = highlighted.replace(/\b(adb|fastboot|python|python3|shell|dd|lsusb|reboot|install|flash|boot|getprop|wipe|sideload)\b/g, 
+    '<span class="token-cmd">$1</span>');
+  
+  // Highlight flags and options
+  highlighted = highlighted.replace(/(--[\w-]+|-[a-zA-Z])/g, 
+    '<span class="token-flag">$1</span>');
+  
+  // Highlight strings in quotes
+  highlighted = highlighted.replace(/"([^"]*)"/g, 
+    '<span class="token-string">"$1"</span>');
+  
+  // Highlight file paths
+  highlighted = highlighted.replace(/(\/[\w\/.-]+|\.img|\.apk|\.zip|\.py)/g, 
+    '<span class="token-path">$1</span>');
+  
+  // Highlight comments
+  highlighted = highlighted.replace(/(#.*)$/gm, 
+    '<span class="token-comment">$1</span>');
+  
+  // Highlight numbers and ports
+  highlighted = highlighted.replace(/\b(\d+)\b/g, 
+    '<span class="token-num">$1</span>');
+  
+  return highlighted.replace(/\n/g, '<br>');
+}
+
+export default function CommandCard({ command, className = '', isSelected, onToggleSelect }: CommandCardProps) {
   const [copied, setCopied] = useState(false);
+  const [isAdapting, setIsAdapting] = useState(false);
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  
+  const variables = useMemo(() => extractVariables(command.command), [command.command]);
   const RiskIcon = riskIcons[command.risk];
 
-  const handleCopy = async () => {
+  const adaptedCommand = useMemo(() => {
+    let cmd = command.command;
+    Object.entries(variableValues).forEach(([key, value]) => {
+      if (value) {
+        const pattern = new RegExp(`\\[${key}\\]|\\$\\{?${key}\\}?`, 'g');
+        cmd = cmd.replace(pattern, value);
+      }
+    });
+    return cmd;
+  }, [command.command, variableValues]);
+
+  const handleCopy = async (useAdapted = false) => {
     try {
-      await navigator.clipboard.writeText(command.command);
+      const textToCopy = useAdapted && isAdapting ? adaptedCommand : command.command;
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch (err) {
@@ -99,8 +127,31 @@ export default function CommandCard({ command, className = '' }: CommandCardProp
     }
   };
 
+  const handleVariableChange = (varName: string, value: string) => {
+    setVariableValues(prev => ({ ...prev, [varName]: value }));
+  };
+
   return (
-    <div className={`snippet-card ${className}`}>
+    <div className={`snippet-card ${className} ${isSelected ? 'ring-2 ring-[var(--y)]' : ''}`}>
+      {/* Selection Checkbox */}
+      {onToggleSelect && (
+        <div className="absolute top-2 right-2 z-10">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect();
+            }}
+            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+              isSelected 
+                ? 'bg-[var(--y)] border-[var(--y)] text-black' 
+                : 'border-[var(--b2)] hover:border-[var(--y)]'
+            }`}
+          >
+            {isSelected && <Check className="w-4 h-4" />}
+          </button>
+        </div>
+      )}
+
       <div className="snippet-header">
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4 text-lime-400" />
@@ -117,9 +168,52 @@ export default function CommandCard({ command, className = '' }: CommandCardProp
       <div className="snippet-body">
         <pre 
           className="text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: highlightSyntax(command.command) }}
+          dangerouslySetInnerHTML={{ 
+            __html: highlightSyntax(command.command, variableValues) 
+          }}
         />
       </div>
+
+      {/* Copy & Adapt - Variable Inputs */}
+      {variables.length > 0 && (
+        <div className="px-4 py-3 border-t border-[var(--b1)] bg-[var(--s2)]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono text-[var(--t3)]">Copy & Adapt Variables</span>
+            <button
+              onClick={() => setIsAdapting(!isAdapting)}
+              className="text-xs flex items-center gap-1 text-[var(--y)] hover:opacity-80 transition-opacity"
+            >
+              {isAdapting ? <X className="w-3 h-3" /> : <Edit3 className="w-3 h-3" />}
+              {isAdapting ? 'Close' : 'Adapt'}
+            </button>
+          </div>
+          
+          {isAdapting && (
+            <div className="space-y-2 mb-3">
+              {variables.map(varName => (
+                <div key={varName} className="flex items-center gap-2">
+                  <label className="text-xs font-mono text-[var(--t2)] min-w-[80px]">
+                    {varName}:
+                  </label>
+                  <input
+                    type="text"
+                    value={variableValues[varName] || ''}
+                    onChange={(e) => handleVariableChange(varName, e.target.value)}
+                    placeholder={`Enter ${varName.toLowerCase()}...`}
+                    className="flex-1 px-2 py-1 text-xs bg-[var(--s3)] border border-[var(--b2)] rounded text-[var(--t1)] focus:border-[var(--y)] outline-none"
+                  />
+                </div>
+              ))}
+              <button
+                onClick={() => handleCopy(true)}
+                className="w-full py-2 mt-2 text-xs font-mono bg-[var(--yd)] text-[var(--y)] rounded hover:bg-[var(--yb)] transition-colors"
+              >
+                Copy Adapted Command
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       
       <div className="snippet-footer">
         <div className="flex items-center gap-2">
@@ -133,12 +227,14 @@ export default function CommandCard({ command, className = '' }: CommandCardProp
           ))}
         </div>
         
-        <button
-          onClick={handleCopy}
-          className={`btn-copy ${copied ? 'copied' : ''} transition-all duration-200`}
-        >
-          {copied ? 'copied' : 'copy'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleCopy(false)}
+            className={`btn-copy ${copied ? 'copied' : ''} transition-all duration-200`}
+          >
+            {copied ? 'copied' : 'copy'}
+          </button>
+        </div>
       </div>
       
       {command.description && (
