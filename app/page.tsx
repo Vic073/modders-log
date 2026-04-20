@@ -106,6 +106,50 @@ export default function Home() {
 
   return (
     <div className="page">
+      {/* Command Palette Modal */}
+      <CommandPalette
+        commands={commands}
+        isOpen={showPalette}
+        onClose={() => setShowPalette(false)}
+        onSelectCommand={handleSelectCommandFromPalette}
+      />
+
+      {/* Export Panel */}
+      {showExport && (
+        <ExportPanel
+          selectedCommands={selectedCommandsList}
+          onClearSelection={handleClearSelection}
+          onClose={() => setShowExport(false)}
+        />
+      )}
+
+      {/* Selection Mode Bar */}
+      {selectionMode && (
+        <div className="fixed top-[var(--hdr)] left-0 right-0 z-30 bg-[var(--s1)] border-b border-[var(--b2)] px-4 py-3">
+          <div className="max-w-[1200px] mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-mono text-[var(--t2)]">
+                {selectedCommands.size} selected
+              </span>
+              <button
+                onClick={() => setShowExport(true)}
+                disabled={selectedCommands.size === 0}
+                className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50"
+              >
+                <FileCode className="w-3 h-3" />
+                Export
+              </button>
+            </div>
+            <button
+              onClick={handleClearSelection}
+              className="text-xs font-mono text-[var(--t3)] hover:text-[var(--t1)]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="nav">
         <div className="flex items-center gap-6">
@@ -116,6 +160,26 @@ export default function Home() {
         </div>
         
         <div className="flex items-center gap-4 ml-auto">
+          {/* Command Palette Trigger */}
+          <button
+            onClick={() => setShowPalette(true)}
+            className="nav-link hidden sm:flex"
+          >
+            <CmdIcon className="w-4 h-4 mr-1" />
+            Command Palette
+            <kbd className="ml-2 px-1.5 py-0.5 text-[10px] bg-[var(--s3)] rounded">
+              ⌘K
+            </kbd>
+          </button>
+
+          <button
+            onClick={() => setSelectionMode(!selectionMode)}
+            className={`nav-link ${selectionMode ? 'active' : ''}`}
+          >
+            <FileCode className="w-4 h-4 mr-1" />
+            Select
+          </button>
+
           <button
             onClick={() => setShowQuickLog(!showQuickLog)}
             className={`nav-link ${showQuickLog ? 'active' : ''}`}
@@ -156,7 +220,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="layout-split">
+        <div className={`layout-split ${selectionMode ? 'pt-16' : ''}`}>
           {/* Filters Sidebar */}
           {showFilters && (
             <aside className="sticky top-20">
@@ -178,7 +242,40 @@ export default function Home() {
 
           {/* Command List */}
           <div className={showFilters ? '' : 'col-span-full'}>
-            <CommandList commands={commands} filters={filters} />
+            <CommandList 
+              commands={commands} 
+              filters={filters} 
+              selectionMode={selectionMode}
+              selectedCommands={selectedCommands}
+              onToggleSelection={handleToggleSelection}
+            />
+          </div>
+        </div>
+
+        {/* WebUSB Experimental Section */}
+        <div className="mt-16 pt-8 border-t border-[var(--b1)]">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-[var(--s2)] rounded-lg">
+              <Usb className="w-6 h-6 text-[var(--y)]" />
+            </div>
+            <div>
+              <h3 className="text-heading mb-2">WebUSB / WebADB Integration</h3>
+              <p className="text-body text-[var(--t2)] mb-4">
+                The "Holy Grail" feature - Connect to your Android device directly from the browser using the WebUSB API. 
+                Imagine running <code>adb devices</code> and seeing your connected phone appear instantly.
+              </p>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono px-2 py-1 bg-[var(--red-bg)] text-[var(--red)] rounded">
+                  EXPERIMENTAL
+                </span>
+                <span className="text-xs font-mono text-[var(--t3)]">
+                  WebUSB API support varies by browser
+                </span>
+              </div>
+              <p className="text-xs text-[var(--t3)] mt-2">
+                Note: Per the original requirements, this feature is currently out of scope for MVP due to WebUSB reliability issues.
+              </p>
+            </div>
           </div>
         </div>
       </main>
