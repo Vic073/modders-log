@@ -1,65 +1,176 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Terminal, Plus, Settings, StickyNote } from 'lucide-react';
+import { Command, CommandFilters } from './types/commands';
+import SearchBar from './components/SearchBar';
+import FilterPills from './components/FilterPills';
+import CommandList from './components/CommandList';
 
 export default function Home() {
+  const [commands, setCommands] = useState<Command[]>([]);
+  const [filters, setFilters] = useState<CommandFilters>({});
+  const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [quickLogText, setQuickLogText] = useState('');
+
+  useEffect(() => {
+    loadCommands();
+  }, []);
+
+  const loadCommands = async () => {
+    try {
+      const response = await fetch('/data/commands.json');
+      const data = await response.json();
+      setCommands(data);
+    } catch (error) {
+      console.error('Failed to load commands:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterChange = (key: keyof CommandFilters, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="container">
+          <div className="space-y-4">
+            <div className="skeleton h-8 w-48"></div>
+            <div className="skeleton h-12 w-full"></div>
+            <div className="space-y-2">
+              <div className="skeleton h-20 w-full"></div>
+              <div className="skeleton h-20 w-full"></div>
+              <div className="skeleton h-20 w-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="page">
+      {/* Navigation */}
+      <nav className="nav">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Terminal className="w-5 h-5 text-[var(--y)]" />
+            <span className="nav-logo">The Modder's Log</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4 ml-auto">
+          <button
+            onClick={() => setShowQuickLog(!showQuickLog)}
+            className={`nav-link ${showQuickLog ? 'active' : ''}`}
+          >
+            <StickyNote className="w-4 h-4 mr-1" />
+            Quick Log
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`nav-link ${showFilters ? 'active' : ''}`}
+          >
+            <Settings className="w-4 h-4 mr-1" />
+            Filters
+          </button>
+          <button className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Add Command
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="container">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-display mb-2">The Modder's Log</h1>
+          <p className="text-body text-[var(--t2)] max-w-2xl">
+            A terminal-aesthetic command library for Android modders. Built for one-handed use on a second phone while your primary device sits in fastboot.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Search Bar */}
+        <div className="mb-8">
+          <SearchBar
+            value={filters.search || ''}
+            onChange={(value) => handleFilterChange('search', value)}
+            placeholder="Search commands, tags, or descriptions..."
+          />
+        </div>
+
+        <div className="layout-split">
+          {/* Filters Sidebar */}
+          {showFilters && (
+            <aside className="sticky top-20">
+              <div className="card p-6">
+                <h3 className="text-heading mb-6">Filters</h3>
+                <FilterPills
+                  selectedCategory={filters.category}
+                  selectedChipset={filters.chipset}
+                  selectedType={filters.type}
+                  selectedRisk={filters.risk}
+                  onCategoryChange={(cat) => handleFilterChange('category', cat)}
+                  onChipsetChange={(chip) => handleFilterChange('chipset', chip)}
+                  onTypeChange={(type) => handleFilterChange('type', type)}
+                  onRiskChange={(risk) => handleFilterChange('risk', risk)}
+                />
+              </div>
+            </aside>
+          )}
+
+          {/* Command List */}
+          <div className={showFilters ? '' : 'col-span-full'}>
+            <CommandList commands={commands} filters={filters} />
+          </div>
         </div>
       </main>
+
+      {/* Quick Log Panel */}
+      {showQuickLog && (
+        <div className="fixed bottom-0 right-4 w-96 max-w-[90vw] bg-[var(--s1)] border border-[var(--b2)] rounded-t-lg shadow-lg">
+          <div className="p-4 border-b border-[var(--b1)] flex items-center justify-between">
+            <h3 className="font-display font-bold text-white flex items-center gap-2">
+              <StickyNote className="w-4 h-4 text-[var(--y)]" />
+              Quick Log
+            </h3>
+            <button
+              onClick={() => setShowQuickLog(false)}
+              className="text-[var(--t3)] hover:text-[var(--t1)] transition-colors"
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-4">
+            <textarea
+              value={quickLogText}
+              onChange={(e) => setQuickLogText(e.target.value)}
+              placeholder="Session notes, serial numbers, error codes..."
+              className="w-full h-32 p-3 bg-[var(--s2)] border border-[var(--b2)] rounded text-[var(--t1)] font-mono text-sm resize-none focus:border-[var(--y)] focus:outline-none"
+            />
+            <div className="mt-3 flex justify-between items-center">
+              <span className="text-xs font-mono text-[var(--t3)]">
+                Auto-timestamped scratch space
+              </span>
+              <button
+                onClick={() => setQuickLogText('')}
+                className="text-xs font-mono text-[var(--t3)] hover:text-[var(--t1)] transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
