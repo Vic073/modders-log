@@ -252,31 +252,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* WebUSB Experimental Section */}
+        {/* WebUSB Device Manager */}
         <div className="mt-16 pt-8 border-t border-[var(--b1)]">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-[var(--s2)] rounded-lg">
-              <Usb className="w-6 h-6 text-[var(--y)]" />
-            </div>
-            <div>
-              <h3 className="text-heading mb-2">WebUSB / WebADB Integration</h3>
-              <p className="text-body text-[var(--t2)] mb-4">
-                The "Holy Grail" feature - Connect to your Android device directly from the browser using the WebUSB API. 
-                Imagine running <code>adb devices</code> and seeing your connected phone appear instantly.
-              </p>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono px-2 py-1 bg-[var(--red-bg)] text-[var(--red)] rounded">
-                  EXPERIMENTAL
-                </span>
-                <span className="text-xs font-mono text-[var(--t3)]">
-                  WebUSB API support varies by browser
-                </span>
-              </div>
-              <p className="text-xs text-[var(--t3)] mt-2">
-                Note: Per the original requirements, this feature is currently out of scope for MVP due to WebUSB reliability issues.
-              </p>
-            </div>
-          </div>
+          <WebUSBPanel />
         </div>
       </main>
 
