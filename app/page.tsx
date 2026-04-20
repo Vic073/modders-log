@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Terminal, Plus, Settings, StickyNote } from 'lucide-react';
+import { Terminal, Plus, Settings, StickyNote, Command as CmdIcon, FileCode, Usb } from 'lucide-react';
 import { Command, CommandFilters } from './types/commands';
 import SearchBar from './components/SearchBar';
 import FilterPills from './components/FilterPills';
 import CommandList from './components/CommandList';
+import CommandPalette from './components/CommandPalette';
+import ExportPanel from './components/ExportPanel';
 
 export default function Home() {
   const [commands, setCommands] = useState<Command[]>([]);
@@ -14,9 +16,26 @@ export default function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogText, setQuickLogText] = useState('');
+  const [showPalette, setShowPalette] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedCommands, setSelectedCommands] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadCommands();
+  }, []);
+
+  // Keyboard shortcut for Command Palette (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowPalette(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const loadCommands = async () => {
@@ -37,6 +56,35 @@ export default function Home() {
       [key]: value
     }));
   };
+
+  const handleToggleSelection = (commandId: string) => {
+    setSelectedCommands(prev => {
+      const next = new Set(prev);
+      if (next.has(commandId)) {
+        next.delete(commandId);
+      } else {
+        next.add(commandId);
+      }
+      return next;
+    });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCommands(new Set());
+    setSelectionMode(false);
+  };
+
+  const handleSelectCommandFromPalette = (command: Command) => {
+    // Scroll to command or highlight it
+    const element = document.getElementById(`command-${command.id}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('flash-copy');
+      setTimeout(() => element.classList.remove('flash-copy'), 400);
+    }
+  };
+
+  const selectedCommandsList = commands.filter(cmd => selectedCommands.has(cmd.id));
 
   if (loading) {
     return (
