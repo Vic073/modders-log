@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Terminal, Plus, Settings, StickyNote, Command as CmdIcon, FileCode, Usb } from 'lucide-react';
+import { Terminal, Plus, Settings, StickyNote, Command as CmdIcon, FileCode } from 'lucide-react';
 import { Command, CommandFilters } from './types/commands';
 import SearchBar from './components/SearchBar';
 import FilterPills from './components/FilterPills';
 import CommandList from './components/CommandList';
 import CommandPalette from './components/CommandPalette';
 import ExportPanel from './components/ExportPanel';
+import WebUSBPanel from './components/WebUSBPanel';
 
 export default function Home() {
   const [commands, setCommands] = useState<Command[]>([]);
