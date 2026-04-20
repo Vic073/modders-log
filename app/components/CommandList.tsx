@@ -9,9 +9,19 @@ interface CommandListProps {
   commands: Command[];
   filters: CommandFilters;
   className?: string;
+  selectionMode?: boolean;
+  selectedCommands?: Set<string>;
+  onToggleSelection?: (commandId: string) => void;
 }
 
-export default function CommandList({ commands, filters, className = '' }: CommandListProps) {
+export default function CommandList({ 
+  commands, 
+  filters, 
+  className = '',
+  selectionMode = false,
+  selectedCommands = new Set(),
+  onToggleSelection
+}: CommandListProps) {
   const filteredCommands = useMemo(() => {
     let filtered = commands;
 
@@ -88,10 +98,15 @@ export default function CommandList({ commands, filters, className = '' }: Comma
         {filteredCommands.map((command, index) => (
           <div
             key={command.id}
+            id={`command-${command.id}`}
             className="anim-fade-up"
             style={{ animationDelay: `${index * 50}ms` }}
           >
-            <CommandCard command={command} />
+            <CommandCard 
+              command={command} 
+              isSelected={selectedCommands.has(command.id)}
+              onToggleSelect={selectionMode && onToggleSelection ? () => onToggleSelection(command.id) : undefined}
+            />
           </div>
         ))}
       </div>
