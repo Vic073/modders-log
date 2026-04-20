@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Copy, Terminal, AlertTriangle, Shield, Zap, Edit3, Check, X } from 'lucide-react';
+import { Copy, Terminal, AlertTriangle, Shield, Zap, Edit3, Check, X, Pencil } from 'lucide-react';
 import { Command, CommandType, RiskLevel } from '../types/commands';
 
 interface CommandCardProps {
@@ -9,6 +9,7 @@ interface CommandCardProps {
   className?: string;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  onEdit?: (command: Command) => void;
 }
 
 const riskIcons = {
@@ -97,7 +98,7 @@ function highlightSyntax(command: string, variables: Record<string, string>): st
   return highlighted.replace(/\n/g, '<br>');
 }
 
-export default function CommandCard({ command, className = '', isSelected, onToggleSelect }: CommandCardProps) {
+export default function CommandCard({ command, className = '', isSelected, onToggleSelect, onEdit }: CommandCardProps) {
   const [copied, setCopied] = useState(false);
   const [isAdapting, setIsAdapting] = useState(false);
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
@@ -153,15 +154,24 @@ export default function CommandCard({ command, className = '', isSelected, onTog
       )}
 
       <div className="snippet-header">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-lime-400" />
-          <h3 className="font-display font-bold text-white">{command.title}</h3>
+        <div className="flex items-center gap-2 min-w-0">
+          <Terminal className="w-4 h-4 text-lime-400 flex-shrink-0" />
+          <h3 className="font-display font-bold text-white truncate">{command.title}</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <RiskIcon className={`w-4 h-4 ${riskColors[command.risk]}`} />
           <span className={`badge ${typeColors[command.type]}`}>
             {command.type}
           </span>
+          {onEdit && (
+            <button
+              onClick={() => onEdit(command)}
+              className="p-1.5 rounded hover:bg-[var(--s3)] transition-colors"
+              title="Edit command"
+            >
+              <Pencil className="w-3.5 h-3.5 text-[var(--t3)] hover:text-[var(--y)]" />
+            </button>
+          )}
         </div>
       </div>
       

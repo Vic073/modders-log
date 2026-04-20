@@ -12,6 +12,7 @@ interface CommandListProps {
   selectionMode?: boolean;
   selectedCommands?: Set<string>;
   onToggleSelection?: (commandId: string) => void;
+  onEditCommand?: (command: Command) => void;
 }
 
 export default function CommandList({ 
@@ -20,7 +21,8 @@ export default function CommandList({
   className = '',
   selectionMode = false,
   selectedCommands = new Set(),
-  onToggleSelection
+  onToggleSelection,
+  onEditCommand
 }: CommandListProps) {
   const filteredCommands = useMemo(() => {
     let filtered = commands;
@@ -106,6 +108,7 @@ export default function CommandList({
               command={command} 
               isSelected={selectedCommands.has(command.id)}
               onToggleSelect={selectionMode && onToggleSelection ? () => onToggleSelection(command.id) : undefined}
+              onEdit={onEditCommand}
             />
           </div>
         ))}
