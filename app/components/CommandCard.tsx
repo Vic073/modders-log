@@ -226,7 +226,7 @@ export default function CommandCard({ command, className = '', isSelected, onTog
       )}
       
       <div className="snippet-footer">
-        <div className="flex items-center gap-2">
+        <div className="snippet-badges">
           <span className={`badge ${categoryColors[command.category]}`}>
             {command.category}
           </span>
@@ -237,41 +237,37 @@ export default function CommandCard({ command, className = '', isSelected, onTog
           ))}
         </div>
         
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleCopy(false)}
-            className={`btn-copy ${copied ? 'copied' : ''} transition-all duration-200`}
-          >
-            {copied ? 'copied' : 'copy'}
-          </button>
-        </div>
+        <button
+          onClick={() => handleCopy(false)}
+          className={`btn-copy ${copied ? 'copied' : ''} transition-all duration-200`}
+        >
+          {copied ? 'copied' : 'copy'}
+        </button>
       </div>
       
       {command.description && (
-        <div className="p-4 border-t border-[var(--b1)]">
+        <div className="snippet-description">
           <p className="text-sm text-[var(--t2)] leading-relaxed">
             {command.description}
           </p>
         </div>
       )}
-      
+
       {command.notes && (
-        <div className="p-4 border-t border-[var(--b1)] bg-[var(--s2)]">
+        <div className="snippet-notes">
           <p className="text-sm text-[var(--t2)] leading-relaxed">
-            <span className="text-orange-400 font-mono">NOTE:</span> {command.notes}
+            <span className="text-orange-400 font-mono text-xs">NOTE:</span> {command.notes}
           </p>
         </div>
       )}
-      
+
       {command.tags.length > 0 && (
-        <div className="p-4 border-t border-[var(--b1)]">
-          <div className="flex flex-wrap gap-1">
-            {command.tags.map(tag => (
-              <span key={tag} className="text-xs font-mono text-[var(--t3)] bg-[var(--s3)] px-2 py-1 rounded">
-                #{tag}
-              </span>
-            ))}
-          </div>
+        <div className="snippet-tags">
+          {command.tags.map(tag => (
+            <span key={tag} className="text-xs font-mono text-[var(--t3)] bg-[var(--s3)] px-2 py-1 rounded">
+              #{tag}
+            </span>
+          ))}
         </div>
       )}
     </div>
